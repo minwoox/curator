@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -217,7 +218,7 @@ public class TreeCache implements Closeable
 
     private static final ChildData DEAD = new ChildData("/", null, null);
 
-    private static boolean isLive(ChildData cd)
+    static boolean isLive(ChildData cd)
     {
         return cd != null && cd != DEAD;
     }
@@ -226,7 +227,7 @@ public class TreeCache implements Closeable
 
     private static final AtomicReferenceFieldUpdater<TreeNode, ConcurrentMap<String, TreeNode>> childrenUpdater = (AtomicReferenceFieldUpdater)AtomicReferenceFieldUpdater.newUpdater(TreeNode.class, ConcurrentMap.class, "children");
 
-    private final class TreeNode implements Watcher, BackgroundCallback
+    final class TreeNode implements Watcher, BackgroundCallback
     {
         volatile ChildData childData;
         final TreeNode parent;
@@ -748,6 +749,17 @@ public class TreeCache implements Closeable
         }
         ChildData result = node.childData;
         return isLive(result) ? result : null;
+    }
+
+    /**
+     * Return an iterator over all nodes in the cache. There are no
+     * guarantees of accuracy; this is merely the most recent view of the data.
+     *
+     * @return a possibly-empty iterator of nodes in the cache
+     */
+    public Iterator<ChildData> iterator()
+    {
+        return new TreeCacheIterator(root);
     }
 
     private void callListeners(final TreeCacheEvent event)
